@@ -1,4 +1,7 @@
 import os
+import json
+import requests
+import hashlib
 import logging
 import pathlib
 from fastapi import FastAPI, Form, HTTPException
@@ -22,9 +25,35 @@ app.add_middleware(
 def root():
     return {"message": "Hello, world!"}
 
+@app.get("/items")
+def get_items():
+    with open("items.json", "r") as f:
+        items = json.load(f)
+    return items
+
 @app.post("/items")
-def add_item(name: str = Form(...)):
-    logger.info(f"Receive item: {name}")
+def add_item(name: str = Form(...), category: str = Form(...), image: str = Form(...)):
+    logger.info(f"Receive item: {name}, {category}, {image}")
+
+    # 画像ファイルの読み込み
+    with open(image, "rb") as f:
+        image_data = f.read()
+    # sha256ハッシュ値の計算
+    hash_object = hashlib.sha256()
+    hash_object.update(image_data)
+    hex_dig = hash_object.hexdigest()
+
+    # ファイルの保存
+    with open(f"images/{hex_dig}.jpg", "wb") as f:
+        f.write(image_data)
+
+    item = {"name": name, "category": category, "image_filename": f"{hex_dig}.jpg"}
+    with open("items.json", "r") as f:
+        items = json.load(f)
+    items["items"].append(item)
+    with open("./items.json", "w") as f:
+        json.dump(items, f)
+
     return {"message": f"item received: {name}"}
 
 @app.get("/image/{image_filename}")
