@@ -31,6 +31,13 @@ def get_items():
         items = json.load(f)
     return items
 
+@app.get("/items/{item_id}")
+def get_item_by_id(item_id: int):
+    with open("items.json", "r") as f:
+        items = json.load(f)
+    item_list = items["items"]
+    return item_list[item_id]
+
 @app.post("/items")
 def add_item(name: str = Form(...), category: str = Form(...), image: str = Form(...)):
     logger.info(f"Receive item: {name}, {category}, {image}")
@@ -65,7 +72,7 @@ async def get_image(image_filename):
         raise HTTPException(status_code=400, detail="Image path does not end with .jpg")
 
     if not image.exists():
-        logger.debug(f"Image not found: {image}")
+        logger.info(f"Image not found: {image}")
         image = images / "default.jpg"
 
     return FileResponse(image)
